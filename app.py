@@ -73,6 +73,180 @@ def attrition_rate_pct(df: pd.DataFrame, group_cols: list[str]) -> pd.DataFrame:
     return g
 
 
+def risk_level_from_score(score: float) -> str:
+    """Map numeric Risk_Score to business buckets (sidebar filter labels)."""
+    if score < 20:
+        return "Low"
+    if score < 40:
+        return "Medium"
+    if score <= 70:
+        return "High"
+    return "Critical"
+
+
+# Labels for drilldown “main risk reasons” (must match compute_employee_risk_scores columns)
+RISK_REASON_DEFINITIONS: list[tuple[str, str]] = [
+    ("reason_boredom", "Boredom gap (3+ yrs, ≤2 projects)"),
+    ("reason_burnout", "Burnout risk (4–5 yrs, 6+ projects)"),
+    ("reason_high_hours", "Heavy workload (>260 monthly hours)"),
+    ("reason_star_poaching", "Star poaching profile (high eval, no promo, 4+ yrs)"),
+    ("reason_toxic_dept", "HR / Accounting department factor"),
+    ("reason_low_salary", "Low salary band"),
+    ("reason_low_satisfaction", "Very low satisfaction (<0.2)"),
+]
+
+
+def compute_employee_risk_scores(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Rule-based Risk_Score (0–190+ before exemptions). Weights:
+    - Boredom gap: tenure ≥3 yrs and ≤2 projects (+35)
+    - Burnout: tenure 4–5 yrs and ≥6 projects (+40)
+    - Heavy workload: average_montly_hours > 260 (+20)
+    - Star poaching risk: high evaluation, no recent promo, tenure ≥4 yrs (+30)
+    - Toxic dept: HR or Accounting (+10)
+    - Low salary band (+15)
+    - Very low satisfaction <0.2 (+40)
+
+    Score is forced to 0 if tenure ≥7 years OR promoted in last 5 years.
+
+    Also adds boolean reason_* columns (True only when the rule applies and the employee is not exempt).
+    """
+    out = df.copy()
+    tenure = out["time_spend_company"].astype(float)
+    proj = out["number_project"].astype(float)
+    hours = out["average_montly_hours"].astype(float)
+    eval_ = out["last_evaluation"].astype(float)
+    promo = out["promotion_last_5years"].astype(int)
+    dept = out["Department"].astype(str).str.strip().str.lower()
+    sal = out["salary"].astype(str).str.strip().str.lower()
+    sat = out["satisfaction_level"].astype(float)
+
+    # Exempt: long-tenure veterans or recently promoted — treat as stable / low flight risk
+    exempt = (tenure >= 7) | (promo == 1)
+    active = ~exempt
+
+    boredom = (tenure >= 3) & (proj <= 2)
+    burnout = (tenure >= 4) & (tenure <= 5) & (proj >= 6)
+    high_hours = hours > 260
+    # "High" evaluation: strong performer at risk of external offers if under-leveled
+    star_poaching = (eval_ >= 0.85) & (promo == 0) & (tenure >= 4)
+    toxic_dept = dept.isin(["hr", "accounting"])
+    low_salary = sal == "low"
+    low_satisfaction = sat < 0.2
+
+    raw = (
+        boredom.astype(int) * 35
+        + burnout.astype(int) * 40
+        + high_hours.astype(int) * 20
+        + star_poaching.astype(int) * 30
+        + toxic_dept.astype(int) * 10
+        + low_salary.astype(int) * 15
+        + low_satisfaction.astype(int) * 40
+    )
+    out["Risk_Score"] = np.where(exempt, 0.0, raw.astype(float))
+    out["Risk_Level"] = out["Risk_Score"].apply(risk_level_from_score)
+
+    # Reasons apply to score logic only when not exempt (used for department drilldown)
+    out["reason_boredom"] = boredom & active
+    out["reason_burnout"] = burnout & active
+    out["reason_high_hours"] = high_hours & active
+    out["reason_star_poaching"] = star_poaching & active
+    out["reason_toxic_dept"] = toxic_dept & active
+    out["reason_low_salary"] = low_salary & active
+    out["reason_low_satisfaction"] = low_satisfaction & active
+
+    return out
+
+
+def summarize_department_risk_reasons(dept_df: pd.DataFrame) -> pd.DataFrame:
+    """Count how often each risk reason appears among employees in a department."""
+    rows = []
+    for col, label in RISK_REASON_DEFINITIONS:
+        if col in dept_df.columns:
+            rows.append({"Reason": label, "Employees": int(dept_df[col].sum())})
+    out = pd.DataFrame(rows)
+    out = out[out["Employees"] > 0].sort_values("Employees", ascending=False)
+    return out
+
+
+def matching_reason_labels(row: pd.Series) -> str:
+    """Comma-separated list of human-readable risk reasons that apply to one employee."""
+    parts = []
+    for col, label in RISK_REASON_DEFINITIONS:
+        if col in row.index and bool(row[col]):
+            parts.append(label)
+    return "; ".join(parts) if parts else "—"
+
+
+def slice_employees_by_risk(
+    dept_df: pd.DataFrame, risk_level: str, reason_column: str | None
+) -> pd.DataFrame:
+    """
+    Filter to employees in this department with the given Risk_Level.
+    If reason_column is set, require that reason flag to be True.
+    If reason_column is None, include everyone in that risk band.
+    """
+    m = dept_df["Risk_Level"] == risk_level
+    if reason_column:
+        m = m & dept_df[reason_column].astype(bool)
+    return dept_df.loc[m].copy()
+
+
+def employee_risk_drilldown_table(slice_df: pd.DataFrame) -> pd.DataFrame:
+    """Columns suitable for displaying in the app (no raw boolean matrix)."""
+    if slice_df.empty:
+        return slice_df
+    out = slice_df.copy()
+    # Reference to source row in hr_data.csv (line 1 = header; first employee = line 2)
+    out.insert(0, "CSV_line", out.index.astype(int) + 2)
+    out["Matching_reasons"] = out.apply(matching_reason_labels, axis=1)
+    want = [
+        "CSV_line",
+        "salary",
+        "satisfaction_level",
+        "time_spend_company",
+        "number_project",
+        "average_montly_hours",
+        "last_evaluation",
+        "Risk_Score",
+        "Risk_Level",
+        "Matching_reasons",
+    ]
+    cols = [c for c in want if c in out.columns]
+    disp = out[cols].copy()
+    rename = {
+        "CSV_line": "CSV line",
+        "salary": "Salary",
+        "satisfaction_level": "Satisfaction",
+        "time_spend_company": "Tenure (yrs)",
+        "number_project": "Projects",
+        "average_montly_hours": "Monthly hours",
+        "last_evaluation": "Last evaluation",
+        "Risk_Score": "Risk score",
+        "Risk_Level": "Risk level",
+        "Matching_reasons": "Matching risk reasons",
+    }
+    disp = disp.rename(columns={k: v for k, v in rename.items() if k in disp.columns})
+    for num_col in ("Satisfaction", "Last evaluation"):
+        if num_col in disp.columns:
+            disp[num_col] = disp[num_col].round(2)
+    if "Risk score" in disp.columns:
+        disp["Risk score"] = disp["Risk score"].round(1)
+    return disp
+
+
+def risk_level_sidebar_multiselect() -> list[str]:
+    """Which risk bands to show on department bar charts (current employees only)."""
+    st.sidebar.markdown("### Predictive Risk Monitor")
+    opts = ["Low", "Medium", "High", "Critical"]
+    return st.sidebar.multiselect(
+        "Risk levels to show",
+        options=opts,
+        default=opts,
+        help="Choose which risk categories appear on each department’s bar chart.",
+    )
+
+
 def apply_sidebar_filters(df: pd.DataFrame) -> pd.DataFrame:
     """Sidebar filters; optional advanced filters collapsed to reduce clutter."""
     d = df.copy()
@@ -219,6 +393,15 @@ def build_recommendations(df: pd.DataFrame) -> list[str]:
 CHART_HEIGHT = 380
 ATTRITION_LABEL = "Attrition rate (%)"
 
+# Predictive Risk Monitor — consistent category order and colors
+RISK_LEVEL_ORDER = ["Low", "Medium", "High", "Critical"]
+RISK_LEVEL_COLORS = {
+    "Low": "#2E7D32",
+    "Medium": "#F9A825",
+    "High": "#EF6C00",
+    "Critical": "#C62828",
+}
+
 
 # -----------------------------------------------------------------------------
 # Main app
@@ -244,12 +427,14 @@ def main():
 
     st.sidebar.header("Scope")
     filtered = apply_sidebar_filters(hr_raw)
+    risk_level_selection = risk_level_sidebar_multiselect()
 
-    tab_exec, tab_risk, tab_dept, tab_rec = st.tabs(
+    tab_exec, tab_risk, tab_dept, tab_pred, tab_rec = st.tabs(
         [
             "Executive Overview",
             "Risk Drivers",
             "Department Drilldown",
+            "Predictive Risk Monitor",
             "Recommendations",
         ]
     )
@@ -565,6 +750,143 @@ def main():
             st.markdown(
                 "*Reading:* Tight clusters of **high hours and low satisfaction** in this department are good candidates for **manager coaching** and **capacity planning**."
             )
+
+    # =========================================================================
+    # Predictive Risk Monitor — department drilldown (rule-based score)
+    # =========================================================================
+    with tab_pred:
+        st.subheader("Predictive Risk Monitor")
+        st.caption(
+            "Drill into **each department**: how many **current employees** fall into each risk band, "
+            "and which **risk drivers** show up most often. Scores are **0** for **7+ years** tenure or a **recent promotion**."
+        )
+        current = filtered[filtered["left"] == 0].copy()
+        if len(current) == 0:
+            st.warning("No current employees in the filtered population (or everyone has left). Adjust sidebar filters.")
+        elif not risk_level_selection:
+            st.info("Select at least one **Risk levels to show** option in the sidebar to build the charts.")
+        else:
+            scored = compute_employee_risk_scores(current)
+            departments = sorted(scored["Department"].astype(str).unique().tolist())
+            focus = st.selectbox(
+                "Jump to department",
+                options=["(Show all below)"] + departments,
+                index=0,
+            )
+
+            for dep in departments:
+                if focus != "(Show all below)" and dep != focus:
+                    continue
+                sub = scored[scored["Department"] == dep]
+                n_emp = len(sub)
+                exp_label = f"{dep} — {n_emp:,} current employee(s)"
+                with st.expander(exp_label, expanded=(focus == dep)):
+                    # Headline KPIs for this department
+                    c1, c2, c3 = st.columns(3)
+                    vc_all = sub["Risk_Level"].value_counts()
+                    with c1:
+                        st.metric("High + Critical", f"{int(vc_all.get('High', 0) + vc_all.get('Critical', 0)):,}")
+                    with c2:
+                        st.metric("Critical only", f"{int(vc_all.get('Critical', 0)):,}")
+                    with c3:
+                        st.metric("Median risk score", f"{sub['Risk_Score'].median():.0f}")
+
+                    # Bar chart: employees by risk category (sidebar controls visible bands)
+                    chart_levels = [lv for lv in RISK_LEVEL_ORDER if lv in risk_level_selection]
+                    bar_rows = [
+                        {"Risk level": lv, "Employees": int(vc_all.get(lv, 0))}
+                        for lv in chart_levels
+                    ]
+                    bar_df = pd.DataFrame(bar_rows)
+                    fig_risk = px.bar(
+                        bar_df,
+                        x="Risk level",
+                        y="Employees",
+                        color="Risk level",
+                        color_discrete_map=RISK_LEVEL_COLORS,
+                        category_orders={"Risk level": chart_levels},
+                        text="Employees",
+                    )
+                    fig_risk.update_traces(textposition="outside")
+                    fig_risk.update_layout(
+                        height=CHART_HEIGHT,
+                        showlegend=False,
+                        yaxis_title="Number of employees",
+                        xaxis_title="",
+                    )
+                    st.plotly_chart(fig_risk, use_container_width=True)
+
+                    # Main risk reasons in this department (frequency of each rule among staff)
+                    reason_df = summarize_department_risk_reasons(sub)
+                    st.markdown("**Main risk drivers in this department**")
+                    if reason_df.empty:
+                        st.caption(
+                            "No rule-based risk flags in this group (e.g. all exempt, or no matching patterns)."
+                        )
+                    else:
+                        fig_rs = px.bar(
+                            reason_df,
+                            x="Employees",
+                            y="Reason",
+                            orientation="h",
+                            text="Employees",
+                            color_discrete_sequence=["#5C6BC0"],
+                        )
+                        fig_rs.update_traces(textposition="outside")
+                        fig_rs.update_layout(
+                            height=min(420, 60 + 40 * len(reason_df)),
+                            yaxis=dict(autorange="reversed"),
+                            xaxis_title="Employees with this factor",
+                            showlegend=False,
+                        )
+                        st.plotly_chart(fig_rs, use_container_width=True)
+                        st.caption(
+                            "Counts reflect how many **current employees** match each rule (exempt staff are excluded from flags)."
+                        )
+
+                    # Nested drilldown: employee rows for risk band × reason
+                    st.markdown("---")
+                    with st.expander("Employee list (risk category × risk reason)", expanded=False):
+                        st.caption(
+                            "Pick a **risk category** and optionally a **specific risk reason** to list employees in this department. "
+                            "**CSV line** matches the row in `hr_data.csv` (line 1 is the header)."
+                        )
+                        reason_choices: list[tuple[str, str | None]] = [
+                            ("All employees in this risk band", None)
+                        ]
+                        reason_choices.extend((lab, col) for col, lab in RISK_REASON_DEFINITIONS)
+                        r_labels = [x[0] for x in reason_choices]
+                        r_map = dict(reason_choices)
+
+                        ec1, ec2 = st.columns(2)
+                        with ec1:
+                            sel_cat = st.selectbox(
+                                "Risk category",
+                                options=RISK_LEVEL_ORDER,
+                                index=0,
+                                key=f"prm_cat_{dep}",
+                            )
+                        with ec2:
+                            sel_reason_label = st.selectbox(
+                                "Risk reason",
+                                options=r_labels,
+                                index=0,
+                                key=f"prm_reason_{dep}",
+                            )
+                        reason_col = r_map[sel_reason_label]
+                        sliced = slice_employees_by_risk(sub, sel_cat, reason_col)
+                        disp_tbl = employee_risk_drilldown_table(sliced)
+                        if disp_tbl.empty:
+                            st.info(
+                                "No employees match this combination. "
+                                "Try **All employees in this risk band** or another reason."
+                            )
+                        else:
+                            st.dataframe(disp_tbl, use_container_width=True, hide_index=True)
+                            st.caption(f"**{len(disp_tbl):,}** employee(s) in this slice.")
+
+            if focus != "(Show all below)":
+                st.caption("Use the dropdown above to switch departments, or choose **(Show all below)** to open every section.")
 
     # =========================================================================
     # Recommendations
