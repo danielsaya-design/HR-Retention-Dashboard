@@ -1,0 +1,69 @@
+﻿Title,URL,Assignees,Status,Linked pull requests,Sub-issues progress,Planned Start,Planned End
+EPIC 1: Project Initiation & Sprint Planning,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/2,,Review,,1 / 1 (100%),12-Feb-26,18-Feb-26
+EPIC 2: Predictive Attrition Modeling,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/11,,In Progress,,0 / 1 (0%),19-Feb-26,18-Mar-26
+User Story 4.2.1,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/50,RobertCruz8,Todo,,0 / 4 (0%),23-Apr-26,29-Apr-26
+User Story 1.1.1,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/4,"christophercabrera-glitch, whitneyrobinson-creator",Todo,,6 / 6 (100%),12-Feb-26,18-Feb-26
+Feature 1.1: Project Setup & Governance,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/3,,Done,,0 / 1 (0%),12-Feb-26,18-Feb-26
+Feature 2.3: Predictive Attrition Modeling,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/12,,Todo,,0 / 1 (0%),19-Feb-26,18-Mar-26
+Feature 3.1: Dashboard Design & UX,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/21,,Todo,,0 / 1 (0%),19-Mar-26,29-Mar-26
+Feature 3.2: Drilldown Functionality,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/28,,Todo,,0 / 1 (0%),30-Mar-26,8-Apr-26
+Feature 3.3: Real-Time Data Integration,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/36,,Todo,,0 / 1 (0%),9-Apr-26,15-Apr-26
+Feature 4.1: Model & Dashboard Validation,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/42,,Todo,,0 / 1 (0%),16-Apr-26,29-Apr-26
+User Story 4.1.1,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/43,"RobertCruz8, whitneyrobinson-creator",Todo,,0 / 5 (0%),16-Apr-26,29-Apr-26
+Task: Conduct kickoff meeting,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/5,whitneyrobinson-creator,Done,,,12-Feb-26,12-Feb-26
+Task: Define project scope and objectives,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/6,whitneyrobinson-creator,In Progress,,,12-Feb-26,15-Feb-26
+Task: Identify stakeholders,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/7,whitneyrobinson-creator,Done,,,12-Feb-26,15-Feb-26
+Task: Build sprint roadmap in Rally,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/8,christophercabrera-glitch,Done,,,16-Feb-26,18-Feb-26
+Task: Define success criteria & KPIs,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/9,whitneyrobinson-creator,Todo,,,16-Feb-26,18-Feb-26
+Task: Establish communication cadence,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/10,whitneyrobinson-creator,Done,,,16-Feb-26,18-Feb-26
+Task: Conduct HR user testing sessions,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/45,whitneyrobinson-creator,Todo,,,16-Apr-26,22-Apr-26
+Task: Capture feedback,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/46,whitneyrobinson-creator,Todo,,,16-Apr-26,22-Apr-26
+Task: Fix identified defects,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/47,RobertCruz8,Todo,,,16-Apr-26,22-Apr-26
+Task: Re-test functionality,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/48,whitneyrobinson-creator,Todo,,,21-Apr-26,22-Apr-26
+Feature 4.2: Performance Validation,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/49,,Todo,,0 / 1 (0%),23-Apr-26,29-Apr-26
+Task: Conduct load testing,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/51,RobertCruz8,Todo,,,23-Apr-26,25-Apr-26
+Task: Measure dashboard response time,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/52,RobertCruz8,Todo,,,23-Apr-26,25-Apr-26
+Task: Identify performance bottlenecks,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/53,RobertCruz8,Todo,,,26-Apr-26,29-Apr-26
+Task: Optimize slow queries or visuals,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/54,RobertCruz8,Todo,,,26-Apr-26,29-Apr-26
+EPIC 5: Deployment & Handoff,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/55,,Todo,,0 / 2 (0%),30-Apr-26,15-May-26
+Feature 5.1: Production Deployment & Knowledge Transfer,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/56,,Todo,,0 / 1 (0%),30-Apr-26,6-May-26
+User Story 5.1.1,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/57,"danielsaya-design, RobertCruz8, whitneyrobinson-creator",Todo,,0 / 5 (0%),30-Apr-26,6-May-26
+Task: Configure production environment,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/58,danielsaya-design,Todo,,,30-Apr-26,2-May-26
+Task: Set up secure user access and permissions,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/59,danielsaya-design,Todo,,,30-Apr-26,2-May-26
+Task: Deploy dashboard to production server,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/60,RobertCruz8,Todo,,,3-May-26,6-May-26
+Task: Perform post-deployment smoke testing,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/61,RobertCruz8,Todo,,,3-May-26,6-May-26
+Task: Confirm stakeholder access and validation,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/62,whitneyrobinson-creator,Todo,,,3-May-26,6-May-26
+Feature 5.2: Training & Documentation,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/63,,Todo,,0 / 1 (0%),7-May-26,13-May-26
+User Story 5.2.1,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/64,whitneyrobinson-creator,Todo,,0 / 5 (0%),7-May-26,13-May-26
+Task: Develop user training materials (slides or guide),https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/65,whitneyrobinson-creator,Todo,,,7-May-26,9-May-26
+Task: Create dashboard user documentation,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/66,whitneyrobinson-creator,Todo,,,7-May-26,9-May-26
+Task: Conduct live training session,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/67,whitneyrobinson-creator,Todo,,,10-May-26,13-May-26
+Task: Record training session for future onboarding,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/68,whitneyrobinson-creator,Todo,,,10-May-26,13-May-26
+Task: Gather user feedback and refine documentation,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/69,whitneyrobinson-creator,Todo,,,10-May-26,13-May-26
+User Story 3.1.1,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/22,"RobertCruz8, whitneyrobinson-creator",Todo,,0 / 5 (0%),19-Mar-26,29-Mar-26
+Task: Create wireframes,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/23,RobertCruz8,Todo,,,19-Mar-26,22-Mar-26
+Task: Define dashboard layout,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/24,RobertCruz8,Todo,,,19-Mar-26,22-Mar-26
+Task: Develop KPI summary page,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/25,RobertCruz8,Todo,,,23-Mar-26,26-Mar-26
+Task: Build retention trend visualizations,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/26,RobertCruz8,Todo,,,23-Mar-26,26-Mar-26
+Task: Conduct stakeholder design review,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/27,whitneyrobinson-creator,Todo,,,27-Mar-26,29-Mar-26
+User Story 3.2.1,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/29,"danielsaya-design, RobertCruz8, whitneyrobinson-creator",Todo,,0 / 5 (0%),30-Mar-26,8-Apr-26
+Task: Design drilldown navigation logic,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/30,RobertCruz8,Todo,,,30-Mar-26,2-Apr-26
+"Task: Define filtering criteria (department, role, tenure)",https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/31,whitneyrobinson-creator,Todo,,,30-Mar-26,2-Apr-26
+Task: Implement interactive chart drilldown,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/32,RobertCruz8,Todo,,,3-Apr-26,6-Apr-26
+Task: Connect drilldown to underlying dataset,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/33,danielsaya-design,Todo,,,3-Apr-26,6-Apr-26
+User Story 3.3.1,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/35,danielsaya-design,Todo,,0 / 4 (0%),9-Apr-26,15-Apr-26
+Task: Test performance on large datasets,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/34,danielsaya-design,Todo,,,7-Apr-26,8-Apr-26
+Task: Configure data refresh schedule,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/37,danielsaya-design,Todo,,,9-Apr-26,11-Apr-26
+Task: Validate refresh timing,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/38,danielsaya-design,Todo,,,9-Apr-26,11-Apr-26
+Task: Test data feeds,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/39,danielsaya-design,Todo,,,12-Apr-26,14-Apr-26
+Task: Monitor data latency,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/40,danielsaya-design,Todo,,,12-Apr-26,15-Apr-26
+EPIC 4: Validation & Testing,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/41,,Todo,,0 / 2 (0%),16-Apr-26,29-Apr-26
+Task: Develop UAT test cases,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/44,whitneyrobinson-creator,Todo,,,16-Apr-26,17-Apr-26
+User Story 2.3.1,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/13,"christophercabrera-glitch, whitneyrobinson-creator",Todo,,0 / 6 (0%),19-Feb-26,18-Mar-26
+"Task: Identify predictive variables (tenure, salary, promotion timing, team size)",https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/14,christophercabrera-glitch,In Progress,,,19-Feb-26,25-Feb-26
+Task: Perform feature engineering,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/15,christophercabrera-glitch,Todo,,,26-Feb-26,4-Mar-26
+Task: Build attrition prediction model,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/16,christophercabrera-glitch,Todo,,,5-Mar-26,11-Mar-26
+Task: Validate model accuracy,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/17,christophercabrera-glitch,Todo,,,12-Mar-26,18-Mar-26
+Task: Create risk scoring system,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/18,christophercabrera-glitch,Todo,,,12-Mar-26,18-Mar-26
+Task: Document model assumptions,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/19,christophercabrera-glitch,Todo,,,12-Mar-26,18-Mar-26
+EPIC 3: HR Retention Dashboard Development,https://github.com/whitneyrobinson-creator/Analytics-and-Consulting-/issues/20,,Todo,,0 / 3 (0%),19-Mar-26,15-Apr-26
