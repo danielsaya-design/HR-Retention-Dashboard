@@ -54,6 +54,9 @@ def load_hr_data(path: str) -> pd.DataFrame:
         df["salary"] = df["salary"].fillna(
             df["salary"].mode().iloc[0] if len(df["salary"].mode()) else "Unknown"
         )
+    # Synthetic employee ID for employee-level tables.
+    if "employee_id" not in df.columns:
+        df.insert(0, "employee_id", [f"EMP-{i:05d}" for i in range(1, len(df) + 1)])
     return df
 
 
@@ -429,12 +432,13 @@ def main():
     filtered = apply_sidebar_filters(hr_raw)
     risk_level_selection = risk_level_sidebar_multiselect()
 
-    tab_exec, tab_risk, tab_dept, tab_pred, tab_rec = st.tabs(
+    tab_exec, tab_risk, tab_dept, tab_pred, tab_cap_stab, tab_rec = st.tabs(
         [
             "Executive Overview",
             "Risk Drivers",
             "Department Drilldown",
             "Predictive Risk Monitor",
+            "Capacity & Stability",
             "Recommendations",
         ]
     )
@@ -889,22 +893,271 @@ def main():
                 st.caption("Use the dropdown above to switch departments, or choose **(Show all below)** to open every section.")
 
     # =========================================================================
+    # Capacity & Stability
+    # =========================================================================
+    with tab_cap_stab:
+        st.subheader("Capacity & Stability")
+        st.caption(
+            "Use this tab to learn three things: where workload is heavy, who may be underused, "
+            "and which employees may be reliable team anchors or mentors."
+        )
+
+        # ---------------------------------------------------------------------
+        # 1) Capacity Planning
+        # ---------------------------------------------------------------------
+        st.markdown("### 1) Capacity Planning")
+        cap_df = filtered.copy()
+        over_5_mask = cap_df["number_project"] > 5
+        over_230h_mask = cap_df["average_montly_hours"] >= 230
+
+        k1, k2, k3, k4 = st.columns(4)
+        with k1:
+            st.metric("Employees over 5 projects", f"{int(over_5_mask.sum()):,}")
+        with k2:
+            st.metric("Employees at or above 230 monthly hours", f"{int(over_230h_mask.sum()):,}")
+        with k3:
+            st.metric("Average projects per employee", f"{cap_df['number_project'].mean():.2f}")
+        with k4:
+            st.metric("Average monthly hours", f"{cap_df['average_montly_hours'].mean():.0f}")
+
+        dep_sum = (
+            cap_df.groupby("Department", observed=False)
+            .agg(
+                employee_count=("left", "count"),
+                avg_projects=("number_project", "mean"),
+                max_projects=("number_project", "max"),
+                employees_over_5_projects=("number_project", lambda s: int((s > 5).sum())),
+                avg_monthly_hours=("average_montly_hours", "mean"),
+            )
+            .reset_index()
+        )
+        dep_sum["avg_projects"] = dep_sum["avg_projects"].round(2)
+        dep_sum["avg_monthly_hours"] = dep_sum["avg_monthly_hours"].round(1)
+        st.markdown("#### Department workload summary")
+        st.dataframe(dep_sum.sort_values("avg_projects", ascending=False), use_container_width=True, hide_index=True)
+
+        c1, c2 = st.columns(2)
+        with c1:
+            avg_proj = (
+                cap_df.groupby("Department", observed=False)["number_project"]
+                .mean()
+                .reset_index(name="avg_number_project")
+            )
+            fig_ap = px.bar(
+                avg_proj,
+                x="Department",
+                y="avg_number_project",
+                title="Average number of projects by department",
+                color_discrete_sequence=["#3B82F6"],
+            )
+            fig_ap.update_layout(height=320, yaxis_title="Average number of projects")
+            st.plotly_chart(fig_ap, use_container_width=True)
+        with c2:
+            over_5_dept = (
+                cap_df.assign(over_5=cap_df["number_project"] > 5)
+                .groupby("Department", observed=False)["over_5"]
+                .sum()
+                .reset_index(name="employees_over_5_projects")
+            )
+            fig_o5 = px.bar(
+                over_5_dept,
+                x="Department",
+                y="employees_over_5_projects",
+                title="Employees over 5 projects by department",
+                color_discrete_sequence=["#F97316"],
+            )
+            fig_o5.update_layout(height=320, yaxis_title="Employees")
+            st.plotly_chart(fig_o5, use_container_width=True)
+
+        st.markdown("#### Employee workload table")
+        cap_cols = [
+            "employee_id",
+            "Department",
+            "salary",
+            "time_spend_company",
+            "number_project",
+            "average_montly_hours",
+            "satisfaction_level",
+            "last_evaluation",
+            "left",
+        ]
+        st.dataframe(
+            cap_df[cap_cols].sort_values(["number_project", "average_montly_hours"], ascending=[False, False]),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+        st.divider()
+
+        # ---------------------------------------------------------------------
+        # 2) Growth Support Candidates
+        # ---------------------------------------------------------------------
+        st.markdown("### 2) Growth Support Candidates")
+        growth_candidates = cap_df[
+            (cap_df["time_spend_company"] == 2) & (cap_df["number_project"] < 3)
+        ].copy()
+        st.metric("Employees flagged for growth support", f"{len(growth_candidates):,}")
+        st.dataframe(
+            growth_candidates[cap_cols].sort_values(["Department", "number_project"]),
+            use_container_width=True,
+            hide_index=True,
+        )
+        st.caption(
+            "These employees may be underutilized and could benefit from a steadier 3-4 project workload "
+            "to support engagement and trust."
+        )
+
+        st.divider()
+
+        # ---------------------------------------------------------------------
+        # 3) Stable / Mentor Candidates
+        # ---------------------------------------------------------------------
+        st.markdown("### 3) Stable / Mentor Candidates")
+        mentor_candidates = cap_df[
+            (cap_df["time_spend_company"] >= 7) | (cap_df["promotion_last_5years"] == 1)
+        ].copy()
+        stable_pool = cap_df[
+            (
+                ((cap_df["time_spend_company"] >= 7) | (cap_df["promotion_last_5years"] == 1))
+                & (cap_df["last_evaluation"] < 0.80)
+                & (cap_df["number_project"] <= 5)
+                & (cap_df["satisfaction_level"] > 0.20)
+                & (cap_df["salary"].astype(str).str.lower() != "low")
+            )
+        ].copy()
+
+        s1, s2 = st.columns(2)
+        with s1:
+            st.metric("Mentor candidate count", f"{len(mentor_candidates):,}")
+        with s2:
+            st.metric("Stable employee pool count", f"{len(stable_pool):,}")
+
+        st.markdown("#### Mentor candidate table")
+        st.dataframe(
+            mentor_candidates[cap_cols + ["promotion_last_5years"]].sort_values(
+                ["time_spend_company", "last_evaluation"], ascending=[False, False]
+            ),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+        st.markdown("#### Stable employee pool table")
+        st.dataframe(
+            stable_pool[cap_cols + ["promotion_last_5years"]].sort_values(
+                ["time_spend_company", "number_project"], ascending=[False, True]
+            ),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+        st.caption(
+            "These employees may serve as stable team anchors and practical mentors for colleagues "
+            "who are showing heavier workload or retention risk signs."
+        )
+
+    # =========================================================================
     # Recommendations
     # =========================================================================
     with tab_rec:
         st.subheader("Recommended actions for leadership & HR")
         st.caption(
-            "These suggestions are **generated from the filtered dataset** — same filters as the rest of the dashboard."
+            "This page turns the dashboard signals into clear actions. "
+            "Each section shows the condition and the recommended next step."
         )
-        items = build_recommendations(filtered)
-        for i, text in enumerate(items, start=1):
-            st.markdown(f"{i}. {text}")
-        st.divider()
+
+        rec_df = filtered.copy()
+        dept_attr = attrition_rate_pct(rec_df, ["Department"])
+        dept_alerts = dept_attr[dept_attr["attrition_rate_pct"] >= 20].copy()
+
+        mask_over_5 = rec_df["number_project"] > 5
+        mask_hours_230 = rec_df["average_montly_hours"] >= 230
+        mask_low_sat = rec_df["satisfaction_level"] <= 0.20
+        mask_growth = (rec_df["time_spend_company"] == 2) & (rec_df["number_project"] < 3)
+        mask_fast_track = (rec_df["last_evaluation"] >= 0.80) & (rec_df["time_spend_company"] == 4)
+        mask_low_salary = rec_df["salary"].astype(str).str.lower() == "low"
+        mask_mentor = (rec_df["time_spend_company"] >= 7) | (rec_df["promotion_last_5years"] == 1)
+        mask_stable = (
+            ((rec_df["time_spend_company"] >= 7) | (rec_df["promotion_last_5years"] == 1))
+            & (rec_df["last_evaluation"] < 0.80)
+            & (rec_df["number_project"] <= 5)
+            & (rec_df["satisfaction_level"] > 0.20)
+            & (rec_df["salary"].astype(str).str.lower() != "low")
+        )
+
+        st.markdown("### Workload Pressure")
         st.markdown(
-            "**Presenting in class:** Walk through *Executive Overview* first, then *Risk Drivers*, "
-            "then one department in *Department Drilldown*, and end with this slide — tie each recommendation "
-            "back to a chart you showed."
+            f"**Condition:** {int(mask_over_5.sum()):,} employees have more than 5 projects and "
+            f"{int(mask_hours_230.sum()):,} are at or above 230 monthly hours."
         )
+        st.markdown(
+            "**Action:** Rebalance assignments this cycle, cap project load near 4–5 for overloaded roles, "
+            "and prioritize manager approvals for any exceptions."
+        )
+
+        st.markdown("### Low Satisfaction Risk")
+        st.markdown(
+            f"**Condition:** {int(mask_low_sat.sum()):,} employees are at or below 0.20 satisfaction."
+        )
+        st.markdown(
+            "**Action:** Schedule stay interviews in the next 2 weeks, document top themes, and assign "
+            "owner-led follow-ups for each high-risk employee."
+        )
+
+        st.markdown("### Early Tenure Underutilization")
+        st.markdown(
+            f"**Condition:** {int(mask_growth.sum()):,} employees are at 2 years tenure with low project load."
+        )
+        st.markdown(
+            "**Action:** Move these employees toward a steady 3–4 project workload with clear role goals "
+            "to improve engagement and confidence."
+        )
+
+        st.markdown("### Promotion Readiness")
+        st.markdown(
+            f"**Condition:** {int(mask_fast_track.sum()):,} employees have high evaluation scores at 4 years tenure."
+        )
+        st.markdown(
+            "**Action:** Run a fast-track promotion review list with HR and managers, and confirm decisions "
+            "within the current performance cycle."
+        )
+
+        st.markdown("### Salary Risk")
+        st.markdown(
+            f"**Condition:** {int(mask_low_salary.sum()):,} employees are in the low salary group."
+        )
+        st.markdown(
+            "**Action:** Launch salary benchmarking for high-turnover roles, then align pay adjustments and "
+            "career-path communication for impacted teams."
+        )
+
+        st.markdown("### Stable and Mentor Candidates")
+        st.markdown(
+            f"**Condition:** {int(mask_mentor.sum()):,} potential mentor candidates and {int(mask_stable.sum()):,} "
+            "employees in the stable pool."
+        )
+        st.markdown(
+            "**Action:** Pair selected stable employees with at-risk team members for onboarding, coaching, "
+            "and weekly check-ins."
+        )
+
+        st.markdown("### Department-Level Attrition")
+        if len(dept_alerts) == 0:
+            st.markdown("**Condition:** No departments are currently at or above 20% attrition.")
+            st.markdown(
+                "**Action:** Continue monthly monitoring and keep current manager support plans in place."
+            )
+        else:
+            st.markdown(
+                f"**Condition:** {len(dept_alerts):,} departments are at or above 20% attrition."
+            )
+            st.markdown(
+                "**Action:** Run a manager effectiveness audit in flagged departments and review workload "
+                "planning, coaching quality, and growth opportunities."
+            )
+            show_cols = ["Department", "headcount", "attrition_rate_pct"]
+            dept_show = dept_alerts[show_cols].copy().sort_values("attrition_rate_pct", ascending=False)
+            dept_show["attrition_rate_pct"] = dept_show["attrition_rate_pct"].round(1)
+            st.dataframe(dept_show, use_container_width=True, hide_index=True)
 
 
 if __name__ == "__main__":
